@@ -24,8 +24,12 @@ type term' =
   | If of term * term * term
   | Fun of varname * term
   | Apply of term * term
-and term = { e : term'; mutable t : ty option }
+and term = { e : term'; mutable t : ty option; pos : (Lexing.position * Lexing.position) option }
 type value =
   | VInt of int
   | VBool of bool
   | VClosure of value Env.t * varname * term
+
+type command =
+  | TopTerm of term
+  | TopDef of string * term

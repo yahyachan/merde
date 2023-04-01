@@ -1,4 +1,4 @@
-open Untyped
+open Syntax
 
 let get_int = function
   | VInt x -> x

@@ -1,8 +1,8 @@
 open OUnit2
-open Lib.Untyped
+open Lib.Syntax
 open Lib.Interpret
 
-let fill e = { e; t = None }
+let fill e = { e; t = None; pos = None }
 let eint x = fill (Int x)
 let ebool x = fill (Bool x)
 let var x = fill (Var x)

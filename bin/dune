@@ -1,0 +1,3 @@
+(executable
+ (name merde)
+ (libraries lib))
