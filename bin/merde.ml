@@ -20,6 +20,7 @@ let read_command () =
   String.of_bytes (Buffer.to_bytes buf)
 
 let loop () =
+  let open Lib.Interpret in
   let parser = Lib.Parser.toplevel Lib.Lexer.token in
   while true do
     print_string "\nmerde> ";
@@ -27,9 +28,9 @@ let loop () =
     let buf = Lexing.from_string (read_command ()) in
     let name, v = begin
       match parser buf with
-      | TopTerm t -> "-", Lib.Interpret.eval !top_env t
+      | TopTerm t -> "-", eval !top_env t
       | TopDef (s, t) ->
-        let th = Lib.Interpret.eval !top_env t in
+        let th = eval !top_env t in
         top_env := Env.add s th !top_env;
         s, th
     end in

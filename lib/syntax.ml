@@ -23,6 +23,7 @@ type term' =
   | Binop of binop * term * term
   | If of term * term * term
   | Fun of varname * term
+  | Let of varname * term * term
   | Apply of term * term
 and term = { e : term'; mutable t : ty option; pos : (Lexing.position * Lexing.position) option }
 type value =

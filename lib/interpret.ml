@@ -17,6 +17,8 @@ let rec eval env {e; _} =
   | Bool b -> VBool b
   | Var v -> Env.find v env
   | Fun (x, t) -> VClosure (env, x, t)
+  | Let (x, a, b) ->
+    eval (Env.add x (eval env a) env) b
   | Apply (f, v) ->
     let (nenv, vn, body) = get_closure (eval env f) in
     let rv = eval env v in
