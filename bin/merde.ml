@@ -4,7 +4,7 @@ let top_env = ref (Env.empty)
 let string_of_value = function
   | VInt x -> string_of_int x
   | VBool b -> string_of_bool b
-  | VClosure _ -> "<fun>"
+  | _ -> "<fun>"
 
 let read_command () =
   let buf = Buffer.create 16 in

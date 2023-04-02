@@ -25,11 +25,13 @@ type term' =
   | Fun of varname * term
   | Let of varname * term * term
   | Apply of term * term
+  | Fix of varname * term
 and term = { e : term'; mutable t : ty option; pos : (Lexing.position * Lexing.position) option }
 type value =
   | VInt of int
   | VBool of bool
   | VClosure of value Env.t * varname * term
+  | VFix of value Env.t * varname * term * (Lexing.position * Lexing.position) option
 
 type command =
   | TopTerm of term

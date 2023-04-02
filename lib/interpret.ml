@@ -10,12 +10,19 @@ let get_closure = function
   | VClosure (a, b, c) -> (a, b, c)
   | _ -> assert false
 
+exception Var_not_found of varname * (Lexing.position * Lexing.position) option
 
-let rec eval env {e; _} =
+let rec eval env {e; pos; _} =
   match e with
   | Int x -> VInt x
   | Bool b -> VBool b
-  | Var v -> Env.find v env
+  | Var v -> begin
+    match Env.find_opt v env with
+    | Some (VFix (e, self, t, pos)) -> eval e @@ { e = Fix (self, t); pos; t = None }
+    | Some x -> x
+    | None -> raise @@ Var_not_found (v, pos)
+  end
+  | Fix (self, t) -> eval (Env.add self (VFix (env, self, t, pos)) env) t
   | Fun (x, t) -> VClosure (env, x, t)
   | Let (x, a, b) ->
     eval (Env.add x (eval env a) env) b

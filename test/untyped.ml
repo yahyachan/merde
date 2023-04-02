@@ -10,6 +10,7 @@ let efun x t = fill (Fun (x, t))
 let eif cond l r = fill (If (cond, l, r))
 let elet x a b = fill (Let (x, a, b))
 let apply f x = fill (Apply (f, x))
+let efix s t = fill (Fix (s, t))
 
 module Infix = struct
   let ( + ) a b = fill (Binop (Plus, a, b))
@@ -48,18 +49,30 @@ let zfix = efun "g" @@ apply (efun "x" @@ apply (var "x") (var "x")) @@
   efun "z" @@ apply (var "g") @@ efun "v" @@
   apply (apply (var "z") (var "z")) (var "v")
 
-let factorial = apply zfix @@ efun "f" @@ efun "x" @@
+let factorial_z = apply zfix @@ efun "f" @@ efun "x" @@
   eif Infix.((var "x") < (eint 1)) (eint 1) @@
   Infix.(var "x" * apply (var "f") (var "x" - eint 1))
 
-let test_zfix _ = assert_equal (VInt 3628800) (ev @@ apply factorial (eint 10))
+let factorial = efix "f" @@ efun "x" @@
+  eif Infix.((var "x") < (eint 1)) (eint 1) @@
+  Infix.(var "x" * apply (var "f") (var "x" - eint 1))
+
+let rec fact = function
+  | 0 -> 1
+  | n -> n * fact (n - 1)
+
+let test_fix _ = 
+  for i = 0 to 10 do
+    assert_equal (VInt (fact i)) (ev @@ apply factorial_z (eint i));
+    assert_equal (VInt (fact i)) (ev @@ apply factorial (eint i))
+  done
 
 let suite =
   "untyped interpreter test" >::: [
     "test_arith" >:: test_arith;
     "test_if" >:: test_if;
     "test_let" >:: test_let;
-    "test_zfix" >:: test_zfix
+    "test_fix" >:: test_fix
   ]
 
 
