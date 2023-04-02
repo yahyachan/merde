@@ -8,6 +8,7 @@ let ebool x = fill (Bool x)
 let var x = fill (Var x)
 let efun x t = fill (Fun (x, t))
 let eif cond l r = fill (If (cond, l, r))
+let elet x a b = fill (Let (x, a, b))
 let apply f x = fill (Apply (f, x))
 
 module Infix = struct
@@ -36,6 +37,13 @@ let test_if _ =
   assert_equal (VInt 1) (ev @@ eif (ebool true) (eint 1) (eint 2));
   assert_equal (VInt 2) (ev @@ eif (ebool false) (eint 1) (eint 2))
 
+let test_let _ =
+  assert_equal (VInt 17) (ev @@ elet "x" (eint 4) @@
+                                elet "y" (eint 5) @@
+                                elet "z" (eint 3) @@
+                                Infix.(var "x" * var "y" - var "z"));
+  assert_equal (VInt 19) (ev @@ elet "b" (ebool false) @@ eif (var "b") (eint 17) (eint 19))
+
 let zfix = efun "g" @@ apply (efun "x" @@ apply (var "x") (var "x")) @@
   efun "z" @@ apply (var "g") @@ efun "v" @@
   apply (apply (var "z") (var "z")) (var "v")
@@ -50,6 +58,7 @@ let suite =
   "untyped interpreter test" >::: [
     "test_arith" >:: test_arith;
     "test_if" >:: test_if;
+    "test_let" >:: test_let;
     "test_zfix" >:: test_zfix
   ]
 
