@@ -1,5 +1,7 @@
 %{
   open Syntax
+
+  let fill_pos e pos = { e; t = None; pos }
 %}
 
 %token PLUS
@@ -47,7 +49,10 @@ plain_term:
   | e1 = term; EQUAL; e2 = term { Binop (Equal, e1, e2) }
   | e1 = term; LESS; e2 = term { Binop (Less, e1, e2) }
   | IF; e1 = term; THEN; e2 = term; ELSE; e3 = term { If (e1, e2, e3) }
-  | FUN; x = VARIABLE; DARROW; e = term { Fun (x, e) }
+  | FUN; xs = arg_list; DARROW; e = term { 
+    let pos = Some ($startpos, $endpos) in
+    (List.fold_right (fun x y -> fill_pos (Fun (x, y)) pos) xs e).e
+  }
   | FIX; self = VARIABLE; DARROW; body = term { Fix (self, body) }
   | LET; x = VARIABLE; EQUAL; a = term; IN; b = term { Let (x, a, b) }
 
@@ -69,6 +74,10 @@ plain_simple_term:
   | LPAREN; e = plain_term; RPAREN
     { e }
 
+arg_list:
+  | x = VARIABLE { [x] }
+  | x = VARIABLE; xs = arg_list { x :: xs }
+
 preprocess(X):
   x = X
-  { { e = x; t = None; pos = Some ($startpos, $endpos) } }
+  { fill_pos x @@ Some ($startpos, $endpos) }
