@@ -12,7 +12,7 @@
 %token TRUE FALSE
 %token <Syntax.varname> VARIABLE
 %token IF THEN ELSE
-%token FUN DARROW
+%token FUN FIX DARROW
 %token LPAREN RPAREN
 %token SEMISEMI
 %token LET IN
@@ -48,6 +48,7 @@ plain_term:
   | e1 = term; LESS; e2 = term { Binop (Less, e1, e2) }
   | IF; e1 = term; THEN; e2 = term; ELSE; e3 = term { If (e1, e2, e3) }
   | FUN; x = VARIABLE; DARROW; e = term { Fun (x, e) }
+  | FIX; self = VARIABLE; DARROW; body = term { Fix (self, body) }
   | LET; x = VARIABLE; EQUAL; a = term; IN; b = term { Let (x, a, b) }
 
 app_term: preprocess(plain_app_term) { $1 }

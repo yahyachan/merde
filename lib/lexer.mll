@@ -12,6 +12,7 @@ rule token = parse
   | "true"          { TRUE }
   | "false"         { FALSE }
   | "fun"           { FUN }
+  | "fix"           { FIX }
   | "=>"            { DARROW }
   | "if"            { IF }
   | "then"          { THEN }

@@ -1,16 +1,17 @@
 open Syntax
+exception Var_not_found of varname * (Lexing.position * Lexing.position) option
+exception Runtime_type_error
 
 let get_int = function
   | VInt x -> x
-  | _ -> assert false
+  | _ -> raise Runtime_type_error
 let get_bool = function
   | VBool b -> b
-  | _ -> assert false
+  | _ -> raise Runtime_type_error
 let get_closure = function
   | VClosure (a, b, c) -> (a, b, c)
-  | _ -> assert false
+  | _ -> raise Runtime_type_error
 
-exception Var_not_found of varname * (Lexing.position * Lexing.position) option
 
 let rec eval env {e; pos; _} =
   match e with
