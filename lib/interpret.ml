@@ -19,7 +19,7 @@ let rec eval env {e; pos; _} =
   | Bool b -> VBool b
   | Var v -> begin
     match Env.find_opt v env with
-    | Some (VFix (e, self, t, pos)) -> eval e @@ { e = Fix (self, t); pos; t = None }
+    | Some (VFix (e, self, t, pos)) -> eval e @@ { e = Fix (self, t); pos }
     | Some x -> x
     | None -> raise @@ Var_not_found (v, pos)
   end

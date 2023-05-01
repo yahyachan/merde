@@ -1,7 +1,7 @@
 %{
   open Syntax
 
-  let fill_pos e pos = { e; t = None; pos }
+  let fill_pos e pos = { e; pos }
 %}
 
 %token PLUS
