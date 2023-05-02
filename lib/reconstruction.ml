@@ -103,4 +103,4 @@ and to_constriants stream env tm =
     let res, con = to_constriants stream (Env.add x (PolyType ([], self_typ)) env) t in
     res, (res, self_typ) :: con
 
-let reconstruct_toplevel = reconstruct 0 (new_stream ())
+let reconstruct_toplevel env t = reconstruct 0 (new_stream ()) env t
