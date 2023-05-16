@@ -1,6 +1,6 @@
 (library
   (name lib)
-  (libraries utils))
+  (libraries utils camlp-streams))
 
 (menhir
  (modules parser))
