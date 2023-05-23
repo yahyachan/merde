@@ -83,6 +83,8 @@ let loop () =
     with
     | Interpret.Runtime_type_error -> print_string "Runtime type error."
     | Interpret.Var_not_found (name, _) -> Printf.printf "Error : variable %s not found." name
+    | Parser.Error -> print_string "Error : syntax error."
+    | Failure s -> print_string @@ "Failure : " ^ s
     | Reconstruction.Type_recursion (tvar, t) -> 
       Printf.printf "Error : type variable %d occurs recursively in %s." tvar (string_of_type t)
     | Reconstruction.Type_mismatch (t1, t2) ->
