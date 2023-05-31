@@ -30,3 +30,6 @@ let new_pos p =
   let ret = p.siz in
   p.siz <- ret + 1;
   ret
+let push_back p v = 
+  let pos = new_pos p in
+  set p pos v

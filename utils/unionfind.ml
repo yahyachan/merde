@@ -1,32 +1,39 @@
 type 'a t = {
-  fa : int array;
-  rk : int array;
-  content : 'a array
+  fa : int Vector.t;
+  rk : int Vector.t;
+  content : 'a Vector.t
 }
 
 let init s init_content =
   {
-    fa = Array.init s (fun x -> x);
-    rk = Array.make s 1;
-    content = Array.init s init_content
+    fa = Vector.init s (fun x -> x);
+    rk = Vector.make s 1;
+    content = Vector.init s init_content
   }
 
+let new_var uf f =
+  let pos = Vector.new_pos uf.fa in
+  Vector.set uf.fa pos pos;
+  Vector.set uf.rk pos 1;
+  Vector.set uf.content pos @@ f pos;
+  pos
+
 let rec get_fa uf x =
-  if uf.fa.(x) = x then
+  if Vector.get uf.fa x = x then
     x
   else
-    let res = get_fa uf @@ uf.fa.(x) in
-    uf.fa.(x) <- res;
+    let res = get_fa uf @@ Vector.get uf.fa x in
+    Vector.set uf.fa x res;
     res
 
 let is_same uf x y =
   get_fa uf x = get_fa uf y
 
 let link_set uf son father =
-  uf.fa.(son) <- father;
-  let mid = uf.rk.(father) in
-  if uf.rk.(son) = mid then
-    uf.rk.(father) <- mid + 1
+  Vector.set uf.fa son father;
+  let mid = Vector.get uf.rk (father) in
+  if Vector.get uf.rk (son) = mid then
+    Vector.set uf.rk (father) @@ mid + 1
   else
     ()
 let merge_set uf x y =
@@ -35,12 +42,12 @@ let merge_set uf x y =
   else
     let a = get_fa uf x in
     let b = get_fa uf y in
-    if uf.rk.(a) > uf.rk.(b) then
+    if Vector.get uf.rk (a) > Vector.get uf.rk (b) then
       link_set uf b a
     else
       link_set uf a b
 
 let get uf x =
-  Array.get uf.content @@ get_fa uf x
+  Vector.get uf.content @@ get_fa uf x
 let set uf x v = 
-  uf.content.(get_fa uf x) <- v
+  Vector.set uf.content (get_fa uf x) v
