@@ -11,7 +11,9 @@ let get_bool = function
 let get_closure = function
   | VClosure (a, b, c) -> (a, b, c)
   | _ -> raise Runtime_type_error
-
+let get_record = function
+  | VRecord m -> m
+  | _ -> raise Runtime_type_error
 
 let rec eval env {e; pos; _} =
   match e with
@@ -33,6 +35,16 @@ let rec eval env {e; pos; _} =
     eval (Env.add vn rv nenv) body
   | If (cond, l, r) ->
     eval env (if get_bool (eval env cond) then l else r)
+  | RecordEmpty -> VRecord Env.empty
+  | RecordSelect (r, field) ->
+    List.hd @@ Env.find field @@ get_record @@ eval env r
+  | RecordExtension (ext, r) ->
+    let ext = Env.map (fun l -> List.map (eval env) l) ext in
+    let r = get_record @@ eval env r in
+    VRecord (concat_env ext r)
+  | RecordRestrict (r, field) ->
+    let r = get_record @@ eval env r in
+    VRecord (Env.add field (List.tl @@ Env.find field r) r)
   | Binop (mid, l, r) ->
     let a = eval env l in
     let b = eval env r in

@@ -13,7 +13,7 @@ let make siz v = init siz (fun _ -> v)
 
 let get a pos =
   match a.arr.(pos) with
-  | None -> raise @@ Invalid_argument ""
+  | None -> raise @@ Invalid_argument ("index out of bound : " ^ Int.to_string pos)
   | Some x -> x
 let set a pos x =
   a.arr.(pos) <- Some x

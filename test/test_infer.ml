@@ -9,7 +9,7 @@ let type_equal (PolyType (l, t)) s =
   let rev = Hashtbl.create 10 in
   let rec aux a b =
     match a, b with
-    | TInt, TInt | TBool, TBool -> true
+    | TInt, TInt | TBool, TBool | TRowEmpty, TRowEmpty -> true
     | TFun (s1, t1), TFun (s2, t2) ->
       aux s1 s2 && aux t1 t2
     | TVar x, TVar y ->
@@ -19,11 +19,28 @@ let type_equal (PolyType (l, t)) s =
         (if Hashtbl.mem rev y 
           then false 
           else (Hashtbl.add tbl x y; Hashtbl.add rev y x; true))
+    | TRecord r1, TRecord r2 -> aux r1 r2
+    | TRowExtension (m1, r1), TRowExtension (m2, r2) ->
+      let xua _ l1 l2 = match l1, l2 with
+        | None, None -> None
+        | None, Some _ | Some _, None -> Some false
+        | Some l1, Some l2 ->
+          begin try Some (List.map2 aux l1 l2 |> List.fold_left (&&) true)
+          with Invalid_argument _ -> Some false end
+      in
+      let mm = Env.merge xua m1 m2 in
+      Env.fold (fun _ -> (&&)) mm true && aux r1 r2
     | _, _ -> false
   in
   let rec travel_tt = function
     | TFun (a, b) -> travel_tt a && travel_tt b
     | TVar x -> Hashtbl.mem rev x
+    | TRecord r -> travel_tt r
+    | TRowExtension (mp, r) ->
+      Env.fold (fun _ l right -> right &&
+        (List.map travel_tt l |> List.fold_left (&&) true)) mp true
+      &&
+      travel_tt r
     | _ -> true
   in
   if aux t s then
@@ -44,9 +61,9 @@ let check_res env tm typ =
   | Type_recursion _ -> assert_equal typ `Equi_rec
   | Type_mismatch _ -> assert_equal typ `Mismatch
 
+let chk = check_res Env.empty
 let test_base _ =
   let open Infix in
-  let chk = check_res Env.empty in
   chk (eint 114) @@ `Content TInt;
   chk (eint 514) @@ `Content TInt;
   chk (ebool true) @@ `Content TBool;
@@ -59,12 +76,10 @@ let test_base _ =
 
 let epair = lfun ["s"; "t"; "f"] @@ lapply (var "f") [var "s"; var "t"]
 let test_simple_poly _ =
-  let chk = check_res Env.empty in
   chk (efun "x" @@ var "x") @@ `Content (TFun (TVar 0, TVar 0));
   chk epair @@ `Content (TFun (TVar 0, TFun (TVar 1, TFun (TFun (TVar 0, (TFun (TVar 1, TVar 2))), TVar 2))))
 
 let test_let_poly _ =
-  let chk = check_res Env.empty in
   chk (efun "s" @@ elet "f" (apply epair (var "s")) 
                 @@ lapply epair [apply (var "f") (eint 1); apply (var "f") (ebool true)]) @@
   `Content (TFun (TVar 1,
@@ -74,16 +89,20 @@ let test_let_poly _ =
    TVar 13)))
 
 let test_rec _ =
-  let chk = check_res Env.empty in
   chk (efix "f" @@ efun "x" @@ apply (var "f") (var "x")) @@ `Content (TFun (TVar 0, TVar 1));
   chk (efix "f" @@ efun "x" @@ var "f") @@ `Equi_rec
+
+let test_record _ =
+  chk (efun "r" @@ elet "r" (remove (var "r") "x") @@ select (var "r") "x") @@
+    `Content (TFun (TRecord (TRowExtension (Env.singleton "x" [TVar 114; TVar 514], TVar 1919)), TVar 514))
 
 let suite =
   "type infer test" >::: [
     "test_base" >:: test_base;
     "test_simple_poly" >:: test_simple_poly;
     "test_let_poly" >:: test_let_poly;
-    "test_rec" >:: test_rec
+    "test_rec" >:: test_rec;
+    "test_record" >:: test_record
   ]
   
 let () =

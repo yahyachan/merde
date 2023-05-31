@@ -11,14 +11,14 @@
 %token EQUAL
 %token LESS
 %token <int> INT
-%token TRUE FALSE
+%token TRUE FALSE COMMA VBAR
 %token <Syntax.varname> VARIABLE
 %token IF THEN ELSE
 %token FUN FIX DARROW
-%token LPAREN RPAREN
+%token LPAREN RPAREN LBRACE RBRACE
 %token SEMISEMI
 %token LET IN
-%token EOF
+%token EOF DOT
 
 %start <Syntax.command> toplevel
 %start <Syntax.command list> file
@@ -71,9 +71,22 @@ plain_simple_term:
     { Bool true }
   | FALSE
     { Bool false }
+  | r = simple_term; DOT; field = VARIABLE
+    { RecordSelect (r, field) }
+  | LBRACE RBRACE { RecordEmpty }
+  | LBRACE r = simple_term SUB field = VARIABLE RBRACE
+    { RecordRestrict (r, field) }
+  | LBRACE ls = set_comma_list RBRACE
+    { RecordExtension (ls, For_test.fill RecordEmpty) }
+  | LBRACE ls = set_comma_list VBAR rs = term RBRACE
+    { RecordExtension (ls, rs) }
   | LPAREN; e = plain_term; RPAREN
     { e }
 
+set_comma_list:
+  | x = VARIABLE; EQUAL; v = term { Env.singleton x [v] }
+  | x = VARIABLE; EQUAL; v = term; COMMA; xs = set_comma_list
+    { insert_lenv xs x v }
 arg_list:
   | x = VARIABLE { [x] }
   | x = VARIABLE; xs = arg_list { x :: xs }

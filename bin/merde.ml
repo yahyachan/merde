@@ -3,46 +3,6 @@ open Syntax
 
 let top_env = ref (Env.empty)
 let top_type_env = ref (Env.empty)
-let string_of_value = function
-  | VInt x -> string_of_int x
-  | VBool b -> string_of_bool b
-  | _ -> "<fun>"
-
-let literal_stream () =
-  let f x =
-    if x < 26 then
-      let c = Char.chr (97 + x) in 
-      Some ("'" ^ String.make 1 c)
-    else
-      Some ("'" ^ Int.to_string x)
-  in
-  Stream.from f
-
-let is_complex_type = function
-  | TFun _ -> true
-  | _ -> false
-let string_of_polytype (PolyType (l, t)) =
-  let buf = Buffer.create 16 in
-  let stream = literal_stream () in
-  let tbl = Hashtbl.create 10 in
-  List.iter (fun x -> Hashtbl.add tbl x @@ Stream.next stream) l;
-  let rec aux = function
-    | TInt -> Buffer.add_string buf "int"
-    | TBool -> Buffer.add_string buf "bool"
-    | TVar x ->
-      let th = if Hashtbl.mem tbl x then Hashtbl.find tbl x else "'_" ^ Int.to_string x in
-      Buffer.add_string buf th
-    | TFun (s, t) ->
-      let b = is_complex_type s in
-      if b then Buffer.add_char buf '(' else ();
-      aux s;
-      if b then Buffer.add_char buf ')' else ();
-      Buffer.add_string buf " -> ";
-      aux t
-  in
-  aux t;
-  String.of_bytes @@ Buffer.to_bytes buf
-let string_of_type t = string_of_polytype @@ PolyType ([], t)
 
 let read_command () =
   let buf = Buffer.create 16 in

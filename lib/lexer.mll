@@ -28,6 +28,11 @@ rule token = parse
   | '-'             { SUB }
   | '*'             { TIMES }
   | '/'             { DIV }
+  | '.'             { DOT }
+  | '{'             { LBRACE }
+  | '}'             { RBRACE }
+  | ','             { COMMA }
+  | '|'             { VBAR }
   | var             { VARIABLE (Lexing.lexeme lexbuf) }
   | eof             { EOF }
 
