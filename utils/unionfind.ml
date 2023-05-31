@@ -14,8 +14,8 @@ let init s init_content =
 let new_var uf f =
   let pos = Vector.new_pos uf.fa in
   Vector.set uf.fa pos pos;
-  Vector.set uf.rk pos 1;
-  Vector.set uf.content pos @@ f pos;
+  Vector.push_back uf.rk 1;
+  Vector.push_back uf.content @@ f pos;
   pos
 
 let rec get_fa uf x =

@@ -23,7 +23,7 @@ let grow ({siz; arr} as p) =
   let narr = Array.init nsiz (fun x -> if x < siz then arr.(x) else None) in
   p.arr <- narr
 let new_pos p =
-  if p.siz = Array.length p.arr then
+  if p.siz >= Array.length p.arr then
     grow p
   else
     ();
