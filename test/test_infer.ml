@@ -6,6 +6,7 @@ open For_test
 
 let type_equal (PolyType (l, t)) s =
   let tbl = Hashtbl.create 10 in
+  let rev = Hashtbl.create 10 in
   let rec aux a b =
     match a, b with
     | TInt, TInt | TBool, TBool -> true
@@ -15,11 +16,20 @@ let type_equal (PolyType (l, t)) s =
       if Hashtbl.mem tbl x then
         Hashtbl.find tbl x = y
       else
-        (Hashtbl.add tbl x y; true)
+        (if Hashtbl.mem rev y 
+          then false 
+          else (Hashtbl.add tbl x y; Hashtbl.add rev y x; true))
     | _, _ -> false
+  in
+  let rec travel_tt = function
+    | TFun (a, b) -> travel_tt a && travel_tt b
+    | TVar x -> Hashtbl.mem rev x
+    | _ -> true
   in
   if aux t s then
     List.filter (fun x -> not @@ Hashtbl.mem tbl x) l = []
+    &&
+    travel_tt s
   else
     false
 
@@ -56,7 +66,12 @@ let test_simple_poly _ =
 let test_let_poly _ =
   let chk = check_res Env.empty in
   chk (efun "s" @@ elet "f" (apply epair (var "s")) 
-                @@ lapply epair [apply (var "f") (eint 1); apply (var "f") (ebool true)]) @@ `Ok
+                @@ lapply epair [apply (var "f") (eint 1); apply (var "f") (ebool true)]) @@
+  `Content (TFun (TVar 1,
+  TFun
+   (TFun (TFun (TFun (TVar 1, TFun (TInt, TVar 16)), TVar 16),
+     TFun (TFun (TFun (TVar 1, TFun (TBool, TVar 19)), TVar 19), TVar 13)),
+   TVar 13)))
 
 let test_rec _ =
   let chk = check_res Env.empty in
