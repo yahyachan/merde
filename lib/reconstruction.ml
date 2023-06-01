@@ -160,50 +160,6 @@ let rec travel uf tbl lp = function
     TRecord (travel uf tbl lp r)
   | prim -> prim
 
-(*
-let solve lp uf t constraints =
-  List.iter (fun (a, b) -> unify uf a b) constraints;
-  let tbl = Hashtbl.create 10 in
-  let res_typ = travel uf tbl lp t in
-  PolyType (List.of_seq @@ Hashtbl.to_seq_keys tbl, res_typ)
-
-let rec reconstruct lp uf env tm =
-  let t, con = to_constriants lp uf env tm in
-  solve lp uf t con
-and to_constriants lp uf env tm = 
-  match tm.e with
-  | Int _ -> TInt, []
-  | Bool _ -> TBool, []
-  | Var s -> instantiate lp uf @@ Env.find s env, []
-  | Binop (op, l, r) ->
-    let inp_type, out_type = side_typeof op in
-    let l, l_con = to_constriants lp uf env l in
-    let r, r_con = to_constriants lp uf env r in
-    out_type, (l, inp_type) :: (r, inp_type) :: List.append l_con r_con
-  | If (b, l, r) ->
-    let b, b_con = to_constriants lp uf env b in
-    let l, l_con = to_constriants lp uf env l in
-    let r, r_con = to_constriants lp uf env r in
-    l, (b, TBool) :: (l, r) :: (b_con @ l_con @ r_con)
-  | Fun (x, t) ->
-    let nv = TVar (Utils.Unionfind.new_var uf (fun x -> `TVar (lp, x))) in
-    let res, con = to_constriants lp uf (Env.add x (PolyType ([], nv)) env) t in
-    TFun (nv, res), con
-  | Let (x, s, t) ->
-    let x_typ = reconstruct (lp + 1) uf env s in
-    to_constriants lp uf (Env.add x x_typ env) t
-  | Apply (s, t) ->
-    let res = TVar (Utils.Unionfind.new_var uf (fun x -> `TVar (lp, x))) in
-    let t1, c1 = to_constriants lp uf env s in 
-    let t2, c2 = to_constriants lp uf env t in
-    res, (t1, TFun (t2, res)) :: (c1 @ c2)
-  | Fix (x, t) ->
-    let self_typ = TVar (Utils.Unionfind.new_var uf (fun x -> `TVar (lp, x))) in
-    let res, con = to_constriants lp uf (Env.add x (PolyType ([], self_typ)) env) t in
-    res, (res, self_typ) :: con
-*)
-
-
 let rec infer lp uf env tm =
   let res = infer_inner lp uf env tm in
   let tbl = Hashtbl.create 10 in
