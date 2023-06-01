@@ -158,7 +158,9 @@ and infer_inner lp uf env tm =
   match tm.e with
   | Int _ -> TInt
   | Bool _ -> TBool
-  | Var s -> instantiate lp uf @@ Env.find s env
+  | Var s ->
+    (try instantiate lp uf @@ Env.find s env
+     with Not_found -> raise @@ Interpret.Var_not_found (s, tm.pos))
   | Binop (op, l, r) ->
     let inp_type, out_type = side_typeof op in
     unify lp uf inp_type (infer_inner lp uf env l);
