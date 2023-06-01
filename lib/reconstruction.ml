@@ -37,11 +37,11 @@ let rec check_occur uf tv = function
   | TRecord s -> check_occur uf tv s
   | TRowExtension (mp, rest) ->
     let rec chk_list = function
-      | [] -> true
-      | x :: xs -> check_occur uf tv x && chk_list xs
+      | [] -> false
+      | x :: xs -> check_occur uf tv x || chk_list xs
     in
-    Env.fold (fun _ cont right -> chk_list cont && right) mp true
-    &&
+    Env.fold (fun _ cont right -> chk_list cont && right) mp false
+    ||
     check_occur uf tv rest
 
 
