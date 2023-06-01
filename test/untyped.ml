@@ -50,12 +50,24 @@ let test_fix _ =
     assert_equal (VInt (fact i)) (ev @@ apply factorial (eint i))
   done
 
+let test_record _ =
+  let th = ["a", [eint 1; ebool true]; "c", [eint 3]; "b", [ebool false; eint 2]] in
+  let th = th |> List.to_seq |> Env.of_seq |> erecord in
+  assert_equal (VInt 1) (ev @@ select th "a");
+  assert_equal (VBool false) (ev @@ select th "b");
+  assert_equal (VInt 3) (ev @@ select th "c");
+  let th = remove th "a" in
+  assert_equal (VBool true) (ev @@ select th "a");
+  let th = ext (Env.singleton "a" [eint 114]) th in
+  assert_equal (VInt 114) (ev @@ select th "a")
+
 let suite =
   "untyped interpreter test" >::: [
     "test_arith" >:: test_arith;
     "test_if" >:: test_if;
     "test_let" >:: test_let;
-    "test_fix" >:: test_fix
+    "test_fix" >:: test_fix;
+    "test_record" >:: test_record
   ]
 
 

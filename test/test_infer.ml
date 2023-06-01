@@ -93,8 +93,12 @@ let test_rec _ =
   chk (efix "f" @@ efun "x" @@ var "f") @@ `Equi_rec
 
 let test_record _ =
-  chk (efun "r" @@ elet "r" (remove (var "r") "x") @@ select (var "r") "x") @@
-    `Content (TFun (TRecord (TRowExtension (Env.singleton "x" [TVar 114; TVar 514], TVar 1919)), TVar 514))
+  let get_sec = efun "r" @@ elet "r" (remove (var "r") "x") @@ select (var "r") "x" in
+  chk get_sec @@
+    `Content (TFun (TRecord (TRowExtension (Env.singleton "x" [TVar 114; TVar 514], TVar 1919)), TVar 514));
+  let ill_fun = efun "r" @@ eif (ebool true) (ext (Env.singleton "x" [eint 2]) (var "r")) 
+                                             (ext (Env.singleton "y" [eint 2]) (var "r")) in
+  chk ill_fun `Mismatch
 
 let suite =
   "type infer test" >::: [
