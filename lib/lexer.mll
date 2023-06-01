@@ -4,6 +4,7 @@
 }
 
 let var = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
+let variant = '`' var
 
 rule token = parse
     [' ' '\t' '\r'] { token lexbuf }
@@ -13,10 +14,14 @@ rule token = parse
   | "false"         { FALSE }
   | "fun"           { FUN }
   | "fix"           { FIX }
+  | "match"         { MATCH }
   | "=>"            { DARROW }
+  | "->"            { SARROW }
   | "if"            { IF }
   | "then"          { THEN }
   | "else"          { ELSE }
+  | "with"          { WITH }
+  | "end"           { END }
   | "let"           { LET }
   | "in"            { IN }
   | ";;"            { SEMISEMI }
@@ -35,6 +40,7 @@ rule token = parse
   | ','             { COMMA }
   | '|'             { VBAR }
   | var             { VARIABLE (Lexing.lexeme lexbuf) }
+  | variant         { VARIANT (Lexing.lexeme lexbuf) }
   | eof             { EOF }
 
 

@@ -45,6 +45,9 @@ let rec eval env {e; pos; _} =
   | RecordRestrict (r, field) ->
     let r = get_record @@ eval env r in
     VRecord (Env.add field (List.tl @@ Env.find field r) r)
+  | Variant (name, t) -> VLabel (name, eval env t)
+  | Match (tm, pls) ->
+    eval_match env (eval env tm) pls
   | Binop (mid, l, r) ->
     let a = eval env l in
     let b = eval env r in
@@ -55,3 +58,16 @@ let rec eval env {e; pos; _} =
     | Div -> VInt (get_int a / get_int b)
     | Equal -> VBool (a = b)
     | Less -> VBool (get_int a < get_int b)
+and eval_match env v = function
+  | [] -> raise Runtime_type_error
+  | (pt, res) :: xs -> 
+    match try_binding pt v with
+    | Some l ->
+      eval (Env.add_seq (List.to_seq l) env) res
+    | None -> eval_match env v xs
+and try_binding pt v =
+  match pt, v with
+  | PVar name, _ -> Some [name, v]
+  | PVariant (n1, np), VLabel (n2, nv) when String.equal n1 n2 ->
+    try_binding np nv
+  | _, _ -> None

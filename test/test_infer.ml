@@ -19,7 +19,7 @@ let type_equal (PolyType (l, t)) s =
         (if Hashtbl.mem rev y 
           then false 
           else (Hashtbl.add tbl x y; Hashtbl.add rev y x; true))
-    | TRecord r1, TRecord r2 -> aux r1 r2
+    | TRecord r1, TRecord r2 | TVariants r1, TVariants r2 -> aux r1 r2
     | TRowExtension (m1, r1), TRowExtension (m2, r2) ->
       let xua _ l1 l2 = match l1, l2 with
         | None, None -> None
@@ -35,7 +35,7 @@ let type_equal (PolyType (l, t)) s =
   let rec travel_tt = function
     | TFun (a, b) -> travel_tt a && travel_tt b
     | TVar x -> Hashtbl.mem rev x
-    | TRecord r -> travel_tt r
+    | TRecord r | TVariants r -> travel_tt r
     | TRowExtension (mp, r) ->
       Env.fold (fun _ l right -> right &&
         (List.map travel_tt l |> List.fold_left (&&) true)) mp true
@@ -109,13 +109,18 @@ let test_record _ =
                                              (ext (Env.singleton "y" [eint 2]) (var "r")) in
   chk ill_fun `Mismatch
 
+let test_variants _ =
+  let ev_1 = (evariant "haha" @@ eint 4) in
+  chk ev_1 @@ `Content (TVariants (TRowExtension (Env.singleton "haha" [TInt], TVar 114514)))
+
 let suite =
   "type infer test" >::: [
     "test_base" >:: test_base;
     "test_simple_poly" >:: test_simple_poly;
     "test_let_poly" >:: test_let_poly;
     "test_rec" >:: test_rec;
-    "test_record" >:: test_record
+    "test_record" >:: test_record;
+    "test_variants" >:: test_variants
   ]
   
 let () =

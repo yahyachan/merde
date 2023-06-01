@@ -1,19 +1,21 @@
 open Syntax
 
-let new_stream () = Stream.from @@ fun x -> Some x
-
+let new_var uf lp =
+  let ret = (Utils.Unionfind.new_var uf (fun x -> `TVar (lp, x))) in
+  TVar ret
 module Typevar_env = Map.Make(Int)
 let rec type_substitute env = function
   | TVar x when Typevar_env.mem x env -> TVar (Typevar_env.find x env)
   | TFun (s, t) -> TFun (type_substitute env s, type_substitute env t)
   | TRecord r -> TRecord (type_substitute env r)
+  | TVariants r -> TVariants (type_substitute env r)
   | TRowExtension (mp, tail) ->
-    let mp = Env.map (List.map (type_substitute env)) mp in
+    let m1 = Env.map (List.map (type_substitute env)) mp in
     begin
       match type_substitute env tail with
       | TRowExtension (m2, tail) ->
-        TRowExtension (concat_env mp m2, tail)
-      | t -> TRowExtension (mp, t)
+        TRowExtension (concat_env m1 m2, tail)
+      | t -> TRowExtension (m1, t)
     end
   | t -> t
 
@@ -35,12 +37,13 @@ let rec check_occur uf tv = function
   | TVar x -> Utils.Unionfind.is_same uf x tv
   | TRowEmpty -> false
   | TRecord s -> check_occur uf tv s
+  | TVariants r -> check_occur uf tv r
   | TRowExtension (mp, rest) ->
     let rec chk_list = function
       | [] -> false
       | x :: xs -> check_occur uf tv x || chk_list xs
     in
-    Env.fold (fun _ cont right -> chk_list cont && right) mp false
+    Env.fold (fun _ cont right -> chk_list cont || right) mp false
     ||
     check_occur uf tv rest
 
@@ -48,9 +51,6 @@ let rec check_occur uf tv = function
 exception Type_recursion of int * ty
 exception Type_mismatch of ty * ty
 
-let new_var uf lp =
-  let ret = (Utils.Unionfind.new_var uf (fun x -> `TVar (lp, x))) in
-  TVar ret
 let env_remove_empty_list m =
   let aux _ l1 l2 =
     match l1, l2 with
@@ -59,20 +59,6 @@ let env_remove_empty_list m =
   in
   Env.merge aux m Env.empty
 
-let rec get_min_level uf = function
-  | TVar v -> begin
-    match Utils.Unionfind.get uf v with
-    | `TVar (s, _) -> s
-    | `Cont t -> get_min_level uf t
-  end
-  | TFun (s, t) -> Int.min (get_min_level uf s) (get_min_level uf t)
-  | TRecord r -> get_min_level uf r
-  | TRowExtension (mp, tail) ->
-    Int.min (get_min_level uf tail) @@
-    Env.fold 
-      (fun _ l right -> Int.min right @@
-        List.fold_right Int.min (List.map (get_min_level uf) l) Int.max_int) mp Int.max_int
-  | _ -> Int.max_int
 let rec restrcit_level uf level = function
   | TVar v -> begin
     match Utils.Unionfind.get uf v with
@@ -81,6 +67,7 @@ let rec restrcit_level uf level = function
   end
   | TFun (s, t) -> restrcit_level uf level s; restrcit_level uf level t
   | TRecord r -> restrcit_level uf level r
+  | TVariants r -> restrcit_level uf level r
   | TRowExtension (mp, tail) ->
     Env.iter (fun _ -> List.iter (restrcit_level uf level)) mp;
     restrcit_level uf level tail
@@ -115,7 +102,7 @@ and unify lb uf a b =
   let open Utils.Unionfind in
   match a, b with
   | TInt, TInt | TBool, TBool | TRowEmpty, TRowEmpty -> ()
-  | TRecord r1, TRecord r2 -> unify lb uf r1 r2
+  | TRecord r1, TRecord r2 | TVariants r1, TVariants r2 -> unify lb uf r1 r2
   | TFun (s1, t1), TFun (s2, t2) ->
     unify lb uf s1 s2; unify lb uf t1 t2
   | TVar x, TVar y -> begin
@@ -158,6 +145,8 @@ let rec travel uf tbl lp = function
     end
   | TRecord r ->
     TRecord (travel uf tbl lp r)
+  | TVariants r ->
+    TVariants (travel uf tbl lp r)
   | prim -> prim
 
 let rec infer lp uf env tm =
@@ -216,6 +205,37 @@ and infer_inner lp uf env tm =
     let mid = TRecord (TRowExtension (Env.singleton field [ret_var], row_var)) in
     unify lp uf mid (infer_inner lp uf env r);
     TRecord row_var
+  | Variant (name, cont) ->
+    let typ_cont = infer_inner lp uf env cont in
+    TVariants (TRowExtension (Env.singleton name [typ_cont], new_var uf lp))
+  | Match (tm, pls) ->
+    let ret_var = new_var uf lp in
+    let rec travel_pls = function
+      | [] -> TRowEmpty
+      | (PVar name, res) :: _ ->
+        let tail_var = new_var uf lp in
+        let new_env = Env.add name (PolyType ([], TVariants tail_var)) env in
+        unify lp uf ret_var (infer_inner lp uf new_env res);
+        tail_var
+      | (PVariant (name, pt), res) :: xs ->
+        let txs = travel_pls xs in
+        let inner_ty, bindings = to_bindings pt in
+        let bindings = List.map (fun (x, ty) -> x, PolyType ([], ty)) bindings in
+        let new_env = Env.add_seq (List.to_seq bindings) env in
+        unify lp uf ret_var (infer_inner lp uf new_env res);
+        match txs with
+        | TRowExtension (mp, rest) -> TRowExtension (insert_lenv mp name inner_ty, rest)
+        | k -> TRowExtension (Env.singleton name [inner_ty], k)
+    and to_bindings = function
+      | PVar name ->
+        let nvar = new_var uf lp in
+        nvar, [name, nvar]
+      | PVariant (name, rest) ->
+        let ty, bindings = to_bindings rest in
+        TVariants (TRowExtension (Env.singleton name [ty], TRowEmpty)), bindings
+    in
+    unify lp uf (TVariants (travel_pls pls)) (infer_inner lp uf env tm);
+    ret_var
 
 
 let reconstruct_toplevel env t = infer 0 (Utils.Unionfind.init 1 (fun x -> `TVar (0, x))) env t

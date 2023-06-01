@@ -7,6 +7,7 @@ type ty =
   | TRowEmpty
   | TRowExtension of (ty list) Env.t * row
   | TRecord of row
+  | TVariants of row
 and row = ty
 
 let rec find_row_tail = function
@@ -54,13 +55,20 @@ type term' =
   | RecordExtension of (term list) Env.t * term
   | RecordRestrict of term * varname
   | RecordEmpty
+  | Variant of string * term
+  | Match of term * (pattern * term) list
 and term = { e : term'; pos : (Lexing.position * Lexing.position) option }
+and pattern =
+  | PVar of varname
+  | PVariant of string * pattern
+
 type value =
   | VInt of int
   | VBool of bool
   | VClosure of value Env.t * varname * term
   | VFix of value Env.t * varname * term * (Lexing.position * Lexing.position) option
   | VRecord of (value list) Env.t
+  | VLabel of string * value
 
 type command =
   | TopTerm of term
@@ -85,6 +93,9 @@ module For_test = struct
   let ext m r = fill @@ RecordExtension (m, r)
   let erecord m = ext m rempty
   let remove r field = fill @@ RecordRestrict (r, field)
+
+  let evariant name cont = fill @@ Variant (name, cont)
+  let ematch tm l = fill @@ Match (tm, l)
 
   module Infix = struct
     let ( + ) a b = fill (Binop (Plus, a, b))
@@ -116,6 +127,8 @@ let rec string_of_value = function
     Env.iter (fun s l -> List.iter (aux s) l) r;
     Buffer.add_char buf '}';
     String.of_bytes @@ Buffer.to_bytes buf
+  | VLabel (name, cont) ->
+    name ^ " " ^ string_of_value cont
   | _ -> "<fun>"
 
 let literal_stream () =
@@ -160,6 +173,10 @@ let string_of_polytype (PolyType (l, t)) =
       Buffer.add_char buf '{';
       aux r;
       Buffer.add_char buf '}'
+    | TVariants r ->
+      Buffer.add_string buf "<|";
+      aux r;
+      Buffer.add_string buf "|>"
   in
   aux t;
   String.of_bytes @@ Buffer.to_bytes buf

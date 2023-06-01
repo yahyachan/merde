@@ -13,8 +13,9 @@
 %token <int> INT
 %token TRUE FALSE COMMA VBAR
 %token <Syntax.varname> VARIABLE
+%token <Syntax.varname> VARIANT
 %token IF THEN ELSE
-%token FUN FIX DARROW
+%token FUN FIX DARROW SARROW MATCH WITH END
 %token LPAREN RPAREN LBRACE RBRACE
 %token SEMISEMI
 %token LET IN
@@ -40,6 +41,13 @@ toplevel:
   | LET; v = VARIABLE; EQUAL; t = term; SEMISEMI { TopDef (v, t) }
   | TOPEXIT { TopExit }
 
+match_list:
+  |  { [] }
+  | VBAR; p = pattern; SARROW; tm = term; xs = match_list { (p, tm) :: xs }
+pattern:
+  | x = VARIABLE { PVar x }
+  | v = VARIANT; p = pattern { PVariant (v, p) }
+
 term: preprocess(plain_term) { $1 }
 plain_term:
   | e = plain_app_term { e }
@@ -49,6 +57,7 @@ plain_term:
   | e1 = term; DIV; e2 = term { Binop (Div, e1, e2) }
   | e1 = term; EQUAL; e2 = term { Binop (Equal, e1, e2) }
   | e1 = term; LESS; e2 = term { Binop (Less, e1, e2) }
+  | v = VARIANT; cont = simple_term { Variant (v, cont) }
   | IF; e1 = term; THEN; e2 = term; ELSE; e3 = term { If (e1, e2, e3) }
   | FUN; xs = arg_list; DARROW; e = term { 
     let pos = Some ($startpos, $endpos) in
@@ -56,6 +65,7 @@ plain_term:
   }
   | FIX; self = VARIABLE; DARROW; body = term { Fix (self, body) }
   | LET; x = VARIABLE; EQUAL; a = term; IN; b = term { Let (x, a, b) }
+  | MATCH t = app_term WITH l = match_list END { Match (t, l) }
 
 app_term: preprocess(plain_app_term) { $1 }
 plain_app_term:
