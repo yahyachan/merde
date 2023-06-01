@@ -20,6 +20,7 @@ rule token = parse
   | "let"           { LET }
   | "in"            { IN }
   | ";;"            { SEMISEMI }
+  | "#q"            { TOPEXIT }
   | '='             { EQUAL }
   | '<'             { LESS }
   | '('             { LPAREN }

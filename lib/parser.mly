@@ -18,7 +18,7 @@
 %token LPAREN RPAREN LBRACE RBRACE
 %token SEMISEMI
 %token LET IN
-%token EOF DOT
+%token EOF DOT TOPEXIT
 
 %start <Syntax.command> toplevel
 %start <Syntax.command list> file
@@ -38,6 +38,7 @@ file:
 toplevel:
   | t = term; SEMISEMI { TopTerm t }
   | LET; v = VARIABLE; EQUAL; t = term; SEMISEMI { TopDef (v, t) }
+  | TOPEXIT { TopExit }
 
 term: preprocess(plain_term) { $1 }
 plain_term:

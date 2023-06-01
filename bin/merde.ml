@@ -17,6 +17,7 @@ let read_command () =
   aux '0';
   String.of_bytes (Buffer.to_bytes buf)
 
+exception Exit
 let loop () =
   let open Interpret in
   let parser = Parser.toplevel Lexer.token in
@@ -38,6 +39,7 @@ let loop () =
           top_type_env := Env.add s t !top_type_env;
           top_env := Env.add s v !top_env;
           s, (t, v)
+        | TopExit -> raise Exit
       end in
       Printf.printf "val %s : %s = %s" name (string_of_polytype t) (string_of_value v)
     with
@@ -52,4 +54,7 @@ let loop () =
   done
 
 let () =
-  loop ()
+  try
+    loop ()
+  with
+  | Exit -> print_endline "Byebye!"

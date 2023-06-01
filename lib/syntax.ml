@@ -65,6 +65,7 @@ type value =
 type command =
   | TopTerm of term
   | TopDef of string * term
+  | TopExit
 
 module For_test = struct
   let fill e = { e; pos = None }
