@@ -62,6 +62,13 @@ let check_res env tm typ =
   | Type_mismatch _ -> assert_equal typ `Mismatch
 
 let chk = check_res Env.empty
+let chk_str s =
+  let open Lib in
+  let tm = Parser.toplevel Lexer.token @@ Lexing.from_string @@ s ^ ";;" in
+  match tm with
+  | TopTerm tm -> chk tm
+  | _ -> assert false
+
 let test_base _ =
   let open Infix in
   chk (eint 114) @@ `Content TInt;
@@ -93,6 +100,8 @@ let test_rec _ =
   chk (efix "f" @@ efun "x" @@ var "f") @@ `Equi_rec
 
 let test_record _ =
+  chk rempty @@ `Content (TRecord TRowEmpty);
+  chk_str "{}.x" `Mismatch;
   let get_sec = efun "r" @@ elet "r" (remove (var "r") "x") @@ select (var "r") "x" in
   chk get_sec @@
     `Content (TFun (TRecord (TRowExtension (Env.singleton "x" [TVar 114; TVar 514], TVar 1919)), TVar 514));
