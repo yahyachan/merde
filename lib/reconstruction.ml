@@ -34,7 +34,11 @@ let side_typeof = function
 let rec check_occur uf tv = function
   | TInt | TBool -> false
   | TFun (s, t) -> check_occur uf tv s || check_occur uf tv t
-  | TVar x -> Utils.Unionfind.is_same uf x tv
+  | TVar x -> begin
+    match Utils.Unionfind.get uf x with
+    | `TVar _ -> Utils.Unionfind.is_same uf x tv
+    | `Cont c -> check_occur uf tv c
+  end
   | TRowEmpty -> false
   | TRecord s -> check_occur uf tv s
   | TVariants r -> check_occur uf tv r
