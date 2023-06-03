@@ -3,6 +3,11 @@ open Lib.Syntax
 open Lib.Interpret
 
 open For_test
+let term_from_str s =
+  let open Lib in
+  match Parser.toplevel Lexer.token @@ Lexing.from_string @@ s ^ ";;" with
+  | TopTerm t -> t
+  | _ -> assert false
 
 let ev = eval Env.empty
 
@@ -61,13 +66,21 @@ let test_record _ =
   let th = ext (Env.singleton "a" [eint 114]) th in
   assert_equal (VInt 114) (ev @@ select th "a")
 
+let test_variants _ =
+  let ev_1 = evariant "`haha" Infix.(eint 1 + eint 2 * eint 3 - eint 6) in
+  assert_equal (VLabel ("`haha", VInt 1)) (ev ev_1);
+  let env = Env.singleton "x" (ev ev_1) in
+  let match_1 = term_from_str "match x with | `Ji u -> 2 | `haha x -> x end" in
+  assert_equal (VInt 1) (eval env match_1)
+
 let suite =
   "untyped interpreter test" >::: [
     "test_arith" >:: test_arith;
     "test_if" >:: test_if;
     "test_let" >:: test_let;
     "test_fix" >:: test_fix;
-    "test_record" >:: test_record
+    "test_record" >:: test_record;
+    "test_variants" >:: test_variants
   ]
 
 

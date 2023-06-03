@@ -50,6 +50,8 @@ let type_equal (PolyType (l, t)) s =
   else
     false
 
+let map_of_assoc_list l = l |> List.to_seq |> Env.of_seq
+
 let check_res env tm typ =
   try
     let res = reconstruct_toplevel env tm in
@@ -107,7 +109,9 @@ let test_record _ =
     `Content (TFun (TRecord (TRowExtension (Env.singleton "x" [TVar 114; TVar 514], TVar 1919)), TVar 514));
   let ill_fun = efun "r" @@ eif (ebool true) (ext (Env.singleton "x" [eint 2]) (var "r")) 
                                              (ext (Env.singleton "y" [eint 2]) (var "r")) in
-  chk ill_fun `Mismatch
+  chk ill_fun `Mismatch;
+  let rec_1 = erecord @@ map_of_assoc_list ["y", [ebool false]; "x", [eint 2; ebool true]] in 
+  chk (apply get_sec rec_1) @@ `Content TBool
 
 let test_variants _ =
   let ev_1 = (evariant "haha" @@ eint 4) in
