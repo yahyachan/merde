@@ -110,13 +110,17 @@ and unify lb uf a b =
   | TFun (s1, t1), TFun (s2, t2) ->
     unify lb uf s1 s2; unify lb uf t1 t2
   | TVar x, TVar y -> begin
+    if is_same uf x y then
+      ()
+    else
     match get uf x, get uf y with
     | `TVar (ls, s), `TVar (lt, t) ->
       let minorant = if ls < lt then s else t in
       merge_set uf s t;
       set uf s @@ `TVar (Int.min ls lt, minorant)
-    | `Cont s, `Cont t -> unify lb uf s t
-    | `Cont s, `TVar (_, v) | `TVar (_, v), `Cont s -> unify lb uf s (TVar v)
+    | `Cont s, `Cont t -> unify lb uf s t; merge_set uf x y
+    | `Cont s, `TVar (_, v) | `TVar (_, v), `Cont s ->
+      unify lb uf s (TVar v); merge_set uf x y
   end
   | TVar x, t | t, TVar x ->
     if check_occur uf x t then raise @@ Type_recursion (x, t) else try_set lb uf x t
