@@ -146,6 +146,7 @@ let is_complex_type = function
   | TRowExtension _ -> true
   | _ -> false
 let string_of_polytype (PolyType (l, t)) =
+  let l = List.sort Int.compare l in
   let buf = Buffer.create 16 in
   let stream = literal_stream () in
   let tbl = Hashtbl.create 10 in
