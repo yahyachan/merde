@@ -9,6 +9,7 @@ let variant = '`' var
 rule token = parse
     [' ' '\t' '\r'] { token lexbuf }
   | '\n'            { new_line lexbuf; token lexbuf }
+  | "//" (_ # '\n')* '\n'    { new_line lexbuf; token lexbuf }
   | ['0'-'9']+      { INT (int_of_string (lexeme lexbuf)) }
   | "true"          { TRUE }
   | "false"         { FALSE }
