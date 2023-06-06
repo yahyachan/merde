@@ -64,12 +64,14 @@ let check_res env tm typ =
   | Type_mismatch _ -> assert_equal typ `Mismatch
 
 let chk = check_res Env.empty
+(*
 let chk_str s =
   let open Lib in
   let tm = Parser.toplevel Lexer.token @@ Lexing.from_string @@ s ^ ";;" in
   match tm with
   | TopTerm tm -> chk tm
   | _ -> assert false
+*)
 
 let test_base _ =
   let open Infix in
@@ -89,8 +91,8 @@ let test_simple_poly _ =
   chk epair @@ `Content (TFun (TVar 0, TFun (TVar 1, TFun (TFun (TVar 0, (TFun (TVar 1, TVar 2))), TVar 2))))
 
 let test_let_poly _ =
-  chk (efun "s" @@ elet "f" (apply epair (var "s")) 
-                @@ lapply epair [apply (var "f") (eint 1); apply (var "f") (ebool true)]) @@
+  chk (elet "p" epair @@ efun "s" @@ elet "f" (apply (var "p") (var "s")) 
+                @@ lapply (var "p") [apply (var "f") (eint 1); apply (var "f") (ebool true)]) @@
   `Content (TFun (TVar 1,
   TFun
    (TFun (TFun (TFun (TVar 1, TFun (TInt, TVar 16)), TVar 16),
@@ -103,7 +105,7 @@ let test_rec _ =
 
 let test_record _ =
   chk rempty @@ `Content (TRecord TRowEmpty);
-  chk_str "{}.x" `Mismatch;
+  chk (select rempty "x") `Mismatch;
   let get_sec = efun "r" @@ elet "r" (remove (var "r") "x") @@ select (var "r") "x" in
   chk get_sec @@
     `Content (TFun (TRecord (TRowExtension (Env.singleton "x" [TVar 114; TVar 514], TVar 1919)), TVar 514));
